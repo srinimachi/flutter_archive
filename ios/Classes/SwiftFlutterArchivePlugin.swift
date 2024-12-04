@@ -146,7 +146,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
 
                     for item in files {
                         self.log("Adding: " + item)
-                        try archive.addEntry(with: item, relativeTo: sourceURL, compressionMethod: .deflate)
+                        try archive?.addEntry(with: item, relativeTo: sourceURL, compressionMethod: .deflate)
                     }
 
                     DispatchQueue.main.async {
@@ -318,7 +318,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
 
             let relativePath = item.path.replacingFirstOccurrence(of: baseDirUrl.path + "/", with: "")
             log("Adding: " + relativePath)
-            try archive.addEntry(with: relativePath, relativeTo: baseDirUrl, compressionMethod: .deflate)
+            try archive?.addEntry(with: relativePath, relativeTo: baseDirUrl, compressionMethod: .deflate)
         }
     }
 
@@ -338,11 +338,11 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
         guard itemExists(at: sourceURL) else {
             throw CocoaError(.fileReadNoSuchFile, userInfo: [NSFilePathErrorKey: sourceURL.path])
         }
-        let archive = try Archive(url: sourceURL, accessMode: .read, pathEncoding: preferredEncoding)
+        let archive = try Archive(url: sourceURL, accessMode: .read)
         
         // Defer extraction of symlinks until all files & directories have been created.
         // This is necessary because we can't create links to files that haven't been created yet.
-        let sortedEntries = archive.sorted { (left, right) -> Bool in
+        let sortedEntries = archive?.sorted { (left, right) -> Bool in
             switch (left.type, right.type) {
             case (.directory, .file): return true
             case (.directory, .symlink): return true
@@ -351,11 +351,11 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
             }
         }
 
-        let totalEntriesCount = Double(sortedEntries.count)
+        let totalEntriesCount = Double(sortedEntries?.count ?? 0)
         var currentEntryIndex: Double = 0
 
         let dispatchGroup = DispatchGroup()
-        for entry in sortedEntries {
+        for entry in sortedEntries! {
             let path = preferredEncoding == nil ? entry.path : entry.path(using: preferredEncoding!)
             let destinationEntryURL = destinationURL.appendingPathComponent(path)
 
@@ -398,7 +398,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                 throw CocoaError(.fileReadInvalidFileName,
                                  userInfo: [NSFilePathErrorKey: destinationEntryURL.path])
             }
-            _ = try archive.extract(entry, to: destinationEntryURL, skipCRC32: skipCRC32)
+            _ = try archive?.extract(entry, to: destinationEntryURL, skipCRC32: skipCRC32)
         }
     }
 
